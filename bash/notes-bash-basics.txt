@@ -1,0 +1,211 @@
+BASH KEYWORDS:
+
+can be used as variable names. they are:
+
+!, esac, select, }, case, fi, then, [[, do, for, until, ]], done, function, while, elif, if, time, else , in, {
+
+commnds basics:
+
+bash commands are usually linux programs stored externally on file system
+
+some commands are built into shell program for speed, standardization, or because they only work correctly when built-in:
+
+command categories:
+
+utilities: general purpose like returning date or #of lines in file
+filters: modify input data
+
+date
+WED Apr 14 10:44:52 EDT 2001
+date '+%H:%M' (10:01)
+date -u (standrd UTC i.e. GMT time)
+-- is the terminating switch used for passing parameters with minus sign at start
+date --universal also works
+#<=comments
+
+COMMAND LINE EDITING
+
+shopt -o emacs|vim shows editing mode on/off
+
+emacs mode:
+
+CTRL-b
+CTRL-f
+CTRL-p
+CTRL-n
+TAB
+
+etc..
+
+ESC used to enter editing
+
+key BINDINGS are listed in Bash man apge in the Readline section.  u can reassign using "bind" command.
+more editing keys controlled by stty (set teletype)
+
+stty -a shows all command keys and info about current session.
+
+many of the above settings are only used with serial port devices.  the settings are control key combinations marked with ^
+
+erase: ^?
+intr: ^C
+kill: ^X
+rprnt: ^R
+stop: ^S
+susp: ^Z
+werase: ^W last word typed
+
+to change suspend to ^v type:
+
+stty susp '^v' 
+
+changing key bindings can be dangerous especially when for example interfacing with windows via X Windows server
+
+VARIABLE ASSIGNMENTS AND DISPLAY MESSAGES
+
+example:
+
+FILENAME="info.txt" (no spaces!)
+
+printf "%s\n" "$FILENAME"
+
+or just a msg
+
+printf "Have a nice day \n"
+
+results of command assigned to var with back-quotes
+
+DATE=`date`
+printf "%s\n" "$DATE"
+
+MULTIPLE COMMANDS
+
+executed consqutively:
+printf "%s\n" "This is executed"; printf "%s\n" "Then this.."
+
+executed till on fails:
+date && printf "%s\n" "THe date command was successful"
+
+executes all even if fails: identical to ;
+date 'duck!' || printf "%s\n" "date failed :("
+
+mixing them:
+date 'format-this!' || printf "%s\n" "Date failed!" && \
+printf "%s\n" "but printf didn't!"
+
+COMMAND HISTORY
+
+date
+!d
+
+date
+!!
+
+same:
+!!
+!-1 go back 1 in hist
+
+date
+printf
+!-2 return printf statement
+
+repeat command line:
+date; sleep 5; !#
+
+history stored in .bash_history unless HISTFILE is defined.
+if histappend option is on, appends to old history up to max size
+histverify allows you to edit history command after retrieved
+
+history show whole thing
+history 10 show 10 most recent
+
+history -p !d to test command being matched
+output:
+history -p date
+date
+
+!1133 retrieve this entry
+
+history -d 1029 delete
+
+-s adds new history entries
+-w/-r read or write to history from a file
+-a append current session
+-c clear history
+
+search for most recent command containing text with
+!?text
+
+date
+!?ate
+out:
+date
+
+or
+date
+!?ate? '+%Y'
+
+quick substituion for last command:
+
+date '+%Y'
+^%Y^%m^
+
+history can be turned off with -o history option
+cmdhist option saves multiple line commands in hist
+lithist break up commands seperated by semi-colors into seperate lines
+
+DIRECTORY COMMANDS
+pwd (present-working-directory)
+two switches for physical side and logical side of a linked folder
+for example:
+ptom -> /home/ramzi/phantom
+pwd -P 
+/home/ramzi/phantom
+pwd -L
+/home/ramzi/ptom
+
+cd - (change directory with switch to last directory you were in)
+
+hence:
+
+cd -; cd - brings you back to current directory
+
+note, ~ and - only work in bash
+whereas ., .. borth work on any linux
+
+SPECIALIZED NAVIGATION AND HISTORY
+
+dirs (shows list of saved dirs)
+pushd [dir] (pushes to saved dirs and switches directories)
+pushd -n [dir] (pushes without switching)
+pushd -N/+N (gets nth left/right dir and puts on top)
+
+pushd -0 rotates right n+1 times  
+pushd +0 rotates left n times
+ex:
+~ ~/interviewPrep ~/Learning ~/ptom
+dirs -l (long form of names for directories)
+/home/ramzi /home/ramzi/interviewPrep /home/ramzi/Learning /home/ramzi/ptom
+dirs -v (vertical display, with list position)
+0 ~
+1 ~/interviewPrep
+2 ~/Learning
+3 ~/ptom
+
+dirs -p (same info, no list position)
+~
+~/interviewPrep
+~/Learning
+~/ptom
+
+dirs -N (nth directors from left)
+dirs -0 ~/ptom 0th index from left
+dirs +2 ~/Learning 2nd index from right
+
+popd -n/-N/+N delete Nth entry 
+
+THE COLON COMMAND
+: is a no-op command
+: `date` quiety discards results same as:
+date > /dev/null , i.e. redirect output to /dev/null blackhole
+
+dirs +N (nth directory from right)

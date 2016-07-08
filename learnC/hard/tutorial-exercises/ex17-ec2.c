@@ -3,29 +3,32 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-
+#include <stdbool.h>
 /*
 	Dynamically defined MAX_SIZE, MAX_ROWS
+	add find function
 	The size of our empty database is MAX_ROWS*(4 + 4) + 2 = 8*MAX_ROWS + 8
 	if MAX_ROWS = 200 => empty_size = 1608
-	every time we add a row we add 1024 bytes to the size
+	every time we add a row we add 1028 bytes to the size
 */
 
+//note, adding a line to this db increases its size by 1028
+//since, when an element is set, it writes only the additional age, name, email
+//which have size 4 + 512 + 512
 struct Address {
 	int id;
 	int set;
+	int age;
 	char *name;
 	char *email;
 };
 
-//fixed-size representing the DB
 struct Database {
 	int MAX_ROWS;
 	int MAX_DATA;
 	struct Address **rows;
 };
-//a reference to a file to read from 
-//and a DB to write to
+
 struct Connection {
 	FILE *file;
 	struct Database *db;
@@ -52,10 +55,10 @@ die(const char *message, struct Connection *conn)
 void
 Address_print(struct Address *addr) 
 {
-	
-	printf("%d %s %s\n",
+	printf("%d %s %s %d\n",
 		addr->id, addr->name == NULL ? "NULL" : addr->name, 
-			addr->email == NULL ? "NULL" : addr->email );
+			addr->email == NULL ? "NULL" : addr->email,
+			addr->age );
 }
 
 /*read one entire file
@@ -98,6 +101,12 @@ Database_load(struct Connection *conn)
 		if(rc != 1) die("Memory Error!", conn);
 
 		if(conn->db->rows[i]->set) {
+			rc = fread(&conn->db->rows[i]->age, 
+						sizeof(int), 
+						1, 
+						conn->file
+					);
+			if(rc != 1) die("Memory Error!", conn);
 
 			conn->db->rows[i]->name = 
 				(char *) malloc(MAX_DATA * sizeof(char));
@@ -219,6 +228,13 @@ Database_write(struct Connection *conn)
 			if(rc != 1) die("Failed to write to database.", conn);
 			if(conn->db->rows[i]->set) {
 				rc = fwrite(
+						&conn->db->rows[i]->age, 
+						sizeof(int), 
+						1, 
+						conn->file
+					);
+			if(rc != 1) die("Failed to write to database.", conn);
+				rc = fwrite(
 						conn->db->rows[i]->name, 
 						sizeof(char)*MAX_DATA, 
 						1, 
@@ -254,14 +270,14 @@ Database_create(struct Connection *conn)
 			(struct Address *) malloc(sizeof(struct Address));	
 		addr->id = i;
 		addr->set = 0;
-
+		addr->age = 0;
 		conn->db->rows[i] = addr;
 	}
 }
 //set data on a database address
 void
 Database_set(struct Connection *conn, int id, 
-				const char *name, const char *email)
+				const char *name, const char *email, const int age)
 {
 	struct Address *addr = conn->db->rows[id]; //assign ref to addr pointer
 	if(addr->set) die("Already set, delete it first", conn);
@@ -277,6 +293,8 @@ Database_set(struct Connection *conn, int id,
 	addr->email = (char *) malloc(conn->db->MAX_DATA * sizeof(char));
 	res = strncpy(addr->email, email, conn->db->MAX_DATA);
 	if(!res) die("Email copy failed", conn);
+
+	addr->age = age;
 }
 
 //print a db address records
@@ -324,6 +342,33 @@ Database_set_size(struct Connection *conn, int MAX_DATA, int MAX_ROWS)
 	conn->db->MAX_ROWS = MAX_ROWS;	
 }
 
+void
+Database_find(struct Connection *conn, struct Address regex)
+{
+	int MAX_ROWS = conn->db->MAX_ROWS;
+	//int MAX_DATA = conn->db->MAX_DATA;
+	
+	int i;
+	for(i = 0; i < MAX_ROWS; ++i) {
+		bool display = 1;
+		if(regex.id != -1 && regex.id < MAX_ROWS) {
+			display = regex.id == conn->db->rows[i]->id;
+		}
+		if(display && regex.set != -1) {
+			display = regex.set == conn->db->rows[i]->set; 
+		}
+		if(display && !strcmp(conn->db->rows[i]->name, "-1")) {
+			display = strcmp(regex.name, conn->db->rows[i]->name);//check this 
+		}
+		if(display && !strcmp(conn->db->rows[i]->name, "-1")) {
+			display = strcmp(regex.email, conn->db->rows[i]->email); 
+		}
+
+		if(display) Address_print(conn->db->rows[i]);
+	}
+
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -331,6 +376,7 @@ main(int argc, char *argv[])
 	char *filename = argv[1];
 	char action = argv[2][0]; //chars passed as string
 	if(action == 'c' && argc != 5) die("USAGE: <MAX_DATA> <MAX_ROWS>", NULL);
+	if(action == 'f' && argc != 8) die("USAGE: <regex_id> <regex_set> <regex_name> <regex_email> ", NULL);
 	//init a connection ref
 	struct Connection *conn = Database_open(filename, action);
 	if(action == 'c') {
@@ -339,9 +385,10 @@ main(int argc, char *argv[])
 
 		Database_set_size(conn, MAX_DATA, MAX_ROWS);
 	}
-	int id = 0;
 
-	if(argc > 3 && action != 'c') id = atoi(argv[3]);
+	int id = 0;
+	if(argc > 3 && action != 'c') { id = atoi(argv[3]); }
+
 	if(id >= conn->db->MAX_ROWS) die("There aren't that many records.", conn);
 	switch(action) {
 		case 'c': //init db and write it to file
@@ -356,10 +403,10 @@ main(int argc, char *argv[])
 			break;
 
 		case 's': //set rec in db, update file
-			if(argc != 6) die("Need id, name, email to set", conn);
+			if(argc != 7) die("Need id, name, email to set", conn);
 			size_t name_sz = strlen(argv[4]);
 			argv[4][name_sz] = '\0';
-			Database_set(conn, id, argv[4], argv[5]);
+			Database_set(conn, id, argv[4], argv[5], atoi(argv[6]));
 			Database_write(conn);
 			break;
 
@@ -368,6 +415,21 @@ main(int argc, char *argv[])
 			if(!conn->db->rows[id]->set) die("Record doesn't exist", conn);
 			Database_delete(conn, id);
 			Database_write(conn);
+			break;
+
+		case 'f':
+
+			if(argc != 8) die("Need 8 args", conn);
+			struct Address regex = (struct Address){ 
+					.id = atoi(argv[3]), 
+					.set = atoi(argv[4]),
+					.name = strdup(argv[5]),
+					.email = strdup(argv[6]),
+					.age = atoi(argv[7])
+			};
+			Database_find(conn, regex);
+			free(regex.name);
+			free(regex.email);
 			break;
 
 		case 'l': //print db contents

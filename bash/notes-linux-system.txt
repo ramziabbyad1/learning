@@ -1,0 +1,75 @@
+Linux is a file system, GNU provides the standard libraries for interacting with the system.
+
+Linux files are organized on a single disk, viewed as files in a single root hierarchy.
+
+Different users can login to the linux environment with different accounts
+
+The file system looks like:
+
+/dev device drivers
+
+/bin and /usr/bin standard linux commands 
+
+/lib and /usr/lib standard linux libraries
+
+/var configuration and log files
+
+/etc contains default config files
+
+/usr/local/bin contains commands added by admin (think composer commands accessible to anyone)
+
+/opt commerical software
+
+/tmp storage for temp fiels
+
+/sbin and /usr/sbin contains system admin commands ("safe" bin, commands for admin only)
+
+everything in linux is a file
+all data and programs are treated the same as in von Neumann architecture
+
+TWO TYPES OF LINKS:
+
+files can be listed in more than one directory.
+
+hard link: pure reference to a another file.  changes to the hard link are applied to the reference file.  hard links are accessed quickly since they don't have to be dereferenced.
+both link and original must be deleted together.
+can only be used in certain areas.
+
+symbolic link: the link is a file that contains the path name of another file. can be used anywhere.
+they are slower and some commands affect link instead of file link points to.  symbolic links must be dereferences, linux opens file, reads path, opens the linked file.
+file can be deleted leaving dangling link
+
+an inode is a number linux assigns to each file.  this "index" node is unique to any storage device.
+if two paths refer to the same inode, then one of them is a hard link.
+
+otherwise i would assume each path in a softlink points to a different file.  the soft link containing a reference to the linking file.
+
+in ext2 file system, there is limited number of inodes, so that there is an upper limit to number of files stored on a disk.  #inodes/disk space = inode density.  this density is specified when a disk or partition (part of disk) is initialized
+
+since ext2 is the standard file system, it uses caching and is should be shut down properly or data can be corrupted/lost.
+
+ext2 uses sparse files
+
+PIPE AND SOCKET FILES
+
+pipe files are shared between two programs, and act as buffers for sharing information.  one programs writes to the pipe, the other reads from the pipe file.
+when the pipe file gets too big, linux halts the writing program and runs the reading program.
+
+similiar to a pipe file is the Unix domain socket file.  it uses netwrok sockets.
+
+DEVICE FILES
+
+shell-scripters mainly interested in character device files.
+located in /dev
+it contains list of devices that CAN be attached to computer (driver files)
+most not accessible to general user but some are
+one is /dev/null, an imaginary blackhole, useful for discarding unwanted responses from shell command.  /dev/null can be read but it is always empty.
+/dev/zero a file full of zeroes, usefull for creating new files
+
+common device files:
+/dev/tty terminal or console program running under (teletypewriter, printer and keyboard connected to computer by cable)
+/dev/dsp interface for AU sound files on sound card
+/dev/fd0 first floppy drive
+/dev/hda1 first IDE drive partition
+/dev/sda1 first scsi drive partition
+

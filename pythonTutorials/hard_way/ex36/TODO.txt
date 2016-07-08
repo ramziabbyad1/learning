@@ -1,0 +1,27 @@
+hyper black jack?
+
+first level is one d normal game of black jack
+
+second level uses two dimensions
+
+when you hit you may add in the horizontal or vertical direction, 
+
+at each stage your cards cannot go over 21*stage and cannot go over 21 in each direction.  whoever gets closest to 21*stage wins.
+
+problem here is how to make the computer play.
+
+using 1 deck...
+player rules: deal them two cards in each direction
+ask them if they want to hit, then when card is dealt ask which stack to place on, or to stay
+
+if they stay or bust, it's the dealer's turn
+
+dealer plays by hitting until all of his stacks have value 17 or more, or he busts.
+
+compare the tally and see who won.
+
+easiest version first, one stack.
+
+deck can be represented as a stack, since cards are dealt from the top.
+
+
